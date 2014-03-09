@@ -1,0 +1,952 @@
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Custom/Posts/Type/Event.php churchope/classes/Custom/Posts/Type/Event.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Custom/Posts/Type/Event.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/classes/Custom/Posts/Type/Event.php	2013-09-29 22:37:29.430773992 -0400
+@@ -2,270 +2,278 @@
+ 
+ class Custom_Posts_Type_Event extends Custom_Posts_Type_Default
+ {
+-	const POST_TYPE = 'th_events';
+-	const TAXONOMY = 'th_events_cat';
+-	
+-	protected $post_slug_option	= '_slug_event';
+-	protected $tax_slug_option	= '_slug_event_cat';
+-
+-	protected $post_type_name	= self::POST_TYPE;
+-	
+-	protected $taxonomy_name = self::TAXONOMY;
+-
+-	const DEFAULT_TAX_SLUG = 'th_event_cat';
+-	
+-	const DEFAULT_POST_SLUG = 'th_event';
+-	
+-	
+-	
+-	function __construct()
+-	{
+-		$this->setDefaultPostSlug(self::DEFAULT_POST_SLUG);
+-		$this->setDefaultTaxSlug(self::DEFAULT_TAX_SLUG);
+-		parent::__construct();
+-	}
+-	
+-	protected function init()
+-	{
+-		register_post_type($this->getPostTypeName(), array(
+-					'labels'				=> $this->getPostLabeles(),
+-					'public'				=> true,
+-					'show_ui'				=> true,
+-					'_builtin'				=> false,
+-					'capability_type'		=> 'post',
+-					'_edit_link'			=> 'post.php?post=%d',
+-					'rewrite'				=> array("slug" =>  $this->getPostSlug()), 
+-					'hierarchical'			=> false,
+-					'menu_icon'				=> get_template_directory_uri() . '/backend/img/i_events.png',
+-					'query_var'				=> true,
+-					'publicly_queryable'	=> true,
+-					'exclude_from_search'	=> false,
+-					'supports'				=> array('title', 'editor', 'thumbnail', 'excerpt', 'comments')
+-		));
+-
+-
+-		register_taxonomy($this->getTaxonomyName(),$this->getPostTypeName(),
+-					array(
+-					'hierarchical'			=> true,
+-					'labels'				=> $this->getTaxLabels(),
+-					'show_ui'				=> true,
+-					'query_var'				=> true,
+-					'rewrite'				=> array('slug' => $this->getTaxSlug()),
+-		));
+-		
+-		
+-		
+-	}
+-	////////////////////////////////////////////
+-	public function run()
+-	{
+-		add_filter("manage_edit-{$this->getPostTypeName()}_columns", array(&$this, "th_post_type_columns"));
+-		add_filter('wp_insert_post_data', array(&$this, 'default_comments_off'));
+-		add_action("manage_posts_custom_column", array(&$this, "th_post_type_custom_columns"));
+-		add_action('restrict_manage_posts', array(&$this, 'th_post_type_restrict_manage_posts'));
+-		add_action('request', array(&$this, 'th_request'));
+-		add_action('init', array(&$this, "thInit"));
+-		add_action( 'init', array(&$this,'event_rewrites_init' ));
+-		add_filter( 'query_vars', array(&$this, 'event_query_vars'));
+-		add_action('template_redirect', array(&$this,'template_redirect_file'));
+-
+-		
+-		$this->addCustomMetaBox( new Custom_MetaBox_Item_Event($this->getTaxonomyName()) );
+-		
+-	}
+-	
+-	function event_rewrites_init(){
+-		add_rewrite_rule(
+-			"{$this->getTaxSlug()}/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/?$",
+-			'index.php?pagename=customeventslist&event_year=$matches[1]&event_month=$matches[2]&event_day=$matches[3]',
+-			'top' );
+-			
+-		add_rewrite_rule(
+-			"{$this->getTaxSlug()}/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/page/(\d+)/?$",
+-			'index.php?pagename=customeventslist&event_year=$matches[1]&event_month=$matches[2]&event_day=$matches[3]&page=$matches[4]',
+-			'top' );
+-	}
+-
+-
+-	function event_query_vars( $query_vars ){
+-		$query_vars[] = 'event_year';
+-		$query_vars[] = 'event_month';
+-		$query_vars[] = 'event_day';
++    const POST_TYPE = 'th_events';
++    const TAXONOMY = 'th_events_cat';
++
++    protected $post_slug_option	= '_slug_event';
++    protected $tax_slug_option	= '_slug_event_cat';
++
++    protected $post_type_name	= self::POST_TYPE;
++
++    protected $taxonomy_name = self::TAXONOMY;
++
++    const DEFAULT_TAX_SLUG = 'th_event_cat';
++
++    const DEFAULT_POST_SLUG = 'th_event';
++
++
++
++    function __construct()
++    {
++        $this->setDefaultPostSlug(self::DEFAULT_POST_SLUG);
++        $this->setDefaultTaxSlug(self::DEFAULT_TAX_SLUG);
++        parent::__construct();
++    }
++
++    protected function init()
++    {
++        register_post_type($this->getPostTypeName(), array(
++            'labels'				=> $this->getPostLabeles(),
++            'public'				=> true,
++            'show_ui'				=> true,
++            '_builtin'				=> false,
++            'capability_type'		=> 'post',
++            '_edit_link'			=> 'post.php?post=%d',
++            'rewrite'				=> array("slug" =>  $this->getPostSlug()),
++            'hierarchical'			=> false,
++            'menu_icon'				=> get_template_directory_uri() . '/backend/img/i_events.png',
++            'query_var'				=> true,
++            'publicly_queryable'	=> true,
++            'exclude_from_search'	=> false,
++            'supports'				=> array('title', 'editor', 'thumbnail', 'excerpt', 'comments')
++        ));
++
++
++        register_taxonomy($this->getTaxonomyName(),$this->getPostTypeName(),
++            array(
++                'hierarchical'			=> true,
++                'labels'				=> $this->getTaxLabels(),
++                'show_ui'				=> true,
++                'query_var'				=> true,
++                'rewrite'				=> array('slug' => $this->getTaxSlug()),
++            ));
++
++
++
++    }
++    ////////////////////////////////////////////
++    public function run()
++    {
++        add_filter("manage_edit-{$this->getPostTypeName()}_columns", array(&$this, "th_post_type_columns"));
++        add_filter('wp_insert_post_data', array(&$this, 'default_comments_off'));
++        add_action("manage_posts_custom_column", array(&$this, "th_post_type_custom_columns"));
++        add_action('restrict_manage_posts', array(&$this, 'th_post_type_restrict_manage_posts'));
++        add_action('request', array(&$this, 'th_request'));
++        add_action('init', array(&$this, "thInit"));
++        add_action( 'init', array(&$this,'event_rewrites_init' ));
++        add_filter( 'query_vars', array(&$this, 'event_query_vars'));
++        add_action('template_redirect', array(&$this,'template_redirect_file'));
++
++
++        $this->addCustomMetaBox( new Custom_MetaBox_Item_Event($this->getTaxonomyName()) );
++
++    }
++
++    function event_rewrites_init(){
++        add_rewrite_rule(
++            "{$this->getTaxSlug()}/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/?$",
++            'index.php?pagename=customeventslist&event_year=$matches[1]&event_month=$matches[2]&event_day=$matches[3]',
++            'top' );
++
++        add_rewrite_rule(
++            "{$this->getTaxSlug()}/([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/page/(\d+)/?$",
++            'index.php?pagename=customeventslist&event_year=$matches[1]&event_month=$matches[2]&event_day=$matches[3]&page=$matches[4]',
++            'top' );
++    }
++
++
++    function event_query_vars( $query_vars ){
++        $query_vars[] = 'event_year';
++        $query_vars[] = 'event_month';
++        $query_vars[] = 'event_day';
+ //		$query_vars[] = 'event_pagination';
+-		
+-		return $query_vars;
+-	}
+-	
+-	function template_redirect_file()
+-	{
+-		if (get_query_var('pagename') == 'customeventslist')
+-		{
+-			status_header( 200 );
+-			locate_template(array('page-customeventslist.php'), true, true);
+-			exit();
+-		}
+-	}
+-
+-
+-	function thInit()
+-	{
+-		global $thevent;
+-		$thevent = $this;
+-	}
+-
+-	function th_request($request)
+-	{
+-		if (is_admin()
+-				&& $GLOBALS['PHP_SELF'] == '/wp-admin/edit.php'
+-				&& isset($request['post_type'])
+-				&& $request['post_type'] == $this->getPostTypeName())
+-		{
+-			$th_events_cat = (isset($request[$this->getTaxonomyName()]) ? $request[$this->getTaxonomyName()] : NULL);
+-			$term = get_term($th_events_cat, $this->getTaxonomyName());
+-			$request['term'] = isset($term->slug);
+-		}
+-		return $request;
+-	}
+-
+-	function th_post_type_restrict_manage_posts()
+-	{
+-		global $typenow;
+-
+-		if ($typenow == $this->getPostTypeName())
+-		{
+-			$filters = array($this->getTaxonomyName());
+-
+-			foreach ($filters as $tax_slug)
+-			{
+-				// retrieve the taxonomy object
+-				$tax_obj = get_taxonomy($tax_slug);
+-				$tax_name = $tax_obj->labels->name;
+-				// retrieve array of term objects per taxonomy
+-				$terms = get_terms($tax_slug);
+-
+-				// output html for taxonomy dropdown filter
+-				echo "<select name='$tax_slug' id='$tax_slug' class='postform'>";
+-				echo "<option value=''>".__('Show All','churchope')." ". $tax_name."</option>";
+-				$th_slider_tax_slug = (isset($_GET[$tax_slug]) ? $_GET[$tax_slug] : NULL);
+-				foreach ($terms as $term)
+-				{
+-					// output each select option line, check against the last $_GET to show the current option selected
+-					echo '<option value=' . $term->slug, $th_slider_tax_slug == $term->slug ? ' selected="selected"' : '', '>' . $term->name . ' (' . $term->count . ')</option>';
+-				}
+-				echo "</select>";
+-			}
+-		}
+-	}
+-
+-	function th_post_type_columns($columns)
+-	{
+-
+-		$columns = array(
+-			"cb" => "<input type=\"checkbox\" />",
+-			"title" => __("Event Item Title", 'churchope'),
+-			"thevents_preview" => __("Image preview", 'churchope'),
+-			"thevents_categories" => __("Assign to Events Category(s)", 'churchope'),
+-			"thevents_event_start" => __("Event start at:", 'churchope'),
+-			"thevents_event_is_repetition" => __("Is repetition:", 'churchope'),
+-			"thevents_event_period" =>__("Repeat every:", 'churchope'),
+-		);
+-
+-		return $columns;
+-	}
+-
+-	function th_post_type_custom_columns($column)
+-	{
+-		global $post;
+-		switch ($column)
+-		{
+-
+-			case "thevents_preview":
+-				?>
+-				<?php if (has_post_thumbnail()) : ?>
+-					<a href="post.php?post=<?php echo $post->ID ?>&action=edit"><?php the_post_thumbnail('event_widget'); ?></a>
+-					<?php
+-				endif;
+-				break;
+-
+-			case "thevents_categories":
+-				$kgcs = get_the_terms(0, $this->getTaxonomyName());
+-				if (!empty($kgcs))
+-				{
+-					$kgcs_html = array();
+-					foreach ($kgcs as $kgc)
+-						array_push($kgcs_html, $kgc->name);
+-
+-					echo implode($kgcs_html, ", ");
+-				}
+-				break;
+-			case 'thevents_event_start':
+-				echo get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_DATE_META_KEY , true);
+-				break;
+-			case 'thevents_event_is_repetition':
+-				$repeat = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_REPEATING_META_KEY, true );
+-				if($repeat)
+-				{
+-					echo __('Yes', 'churchope');
+-				}
+-				else
+-				{
+-					echo __('No', 'churchope');
+-				}
+-				break;
+-			case 'thevents_event_period':
+-				$repeat = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_REPEATING_META_KEY, true );
+-				if($repeat)
+-				{
+-					$period = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_INTERVAL_META_KEY , true);
+-					if($period)
+-					{
+-						echo __(ucfirst($period), 'churchope');
+-					}
+-				}
+-				break;
+-		}
+-	}
+-
+-	protected function getPostLabeles()
+-	{
+-
+-		$labels = array(
+-			'name'				=> __('Events',  'churchope'),
+-			'all_items'			=> __('Event Posts',  'churchope'),
+-			'singular_name'		=> __('Event',  'churchope'),
+-			'add_new'			=> __('Add New',  'churchope'),
+-			'add_new_item'		=> __('Add New Item', 'churchope'),
+-			'edit_item'			=> __('Edit Item', 'churchope'),
+-			'new_item'			=> __('New Item', 'churchope'),
+-			'view_item'			=> __('View Item', 'churchope'),
+-			'search_items'		=> __('Search Items', 'churchope'),
+-			'not_found'			=> __('No items found', 'churchope'),
+-			'not_found_in_trash' => __('No items found in Trash', 'churchope'),
+-			'parent_item_colon'	=> ''
+-		);
+-		
+-		return $labels;
+-	}
+-
+-	protected function getTaxLabels()
+-	{
+-		$labels = array(
+-			'name'					=> __('Event Categories', 'churchope'),
+-			'singular_name'			=> __('Event Category',  'churchope'),
+-			'search_items'			=> __('Search Events Categories', 'churchope'),
+-			'popular_items'			=> __('Popular Events Categories', 'churchope'),
+-			'all_items'				=> __('All Events Categories', 'churchope'),
+-			'parent_item'			=> null,
+-			'parent_item_colon'		=> null,
+-			'edit_item'				=> __('Edit Events Category', 'churchope'),
+-			'update_item'			=> __('Update Events Category', 'churchope'),
+-			'add_new_item'			=> __('Add New Events Category', 'churchope'),
+-			'new_item_name'			=> __('New Events Category Name', 'churchope'),
+-			'add_or_remove_items'	=> __('Add or remove Events Categories', 'churchope'),
+-			'choose_from_most_used' => __('Choose from the most used Events Categories', 'churchope'),
+-			'separate_items_with_commas' => __('Separate Events Categories with commas', 'churchope'),
+-		);
+-		return $labels;
+-	}
++
++        return $query_vars;
++    }
++
++    function template_redirect_file()
++    {
++        if (get_query_var('pagename') == 'customeventslist')
++        {
++            status_header( 200 );
++            locate_template(array('page-customeventslist.php'), true, true);
++            exit();
++        }
++    }
++
++
++    function thInit()
++    {
++        global $thevent;
++        $thevent = $this;
++    }
++
++    function th_request($request)
++    {
++        if (is_admin()
++            && $GLOBALS['PHP_SELF'] == '/wp-admin/edit.php'
++            && isset($request['post_type'])
++            && $request['post_type'] == $this->getPostTypeName())
++        {
++            $th_events_cat = (isset($request[$this->getTaxonomyName()]) ? $request[$this->getTaxonomyName()] : NULL);
++            $term = get_term($th_events_cat, $this->getTaxonomyName());
++            $request['term'] = isset($term->slug);
++        }
++        return $request;
++    }
++
++    function th_post_type_restrict_manage_posts()
++    {
++        global $typenow;
++
++        if ($typenow == $this->getPostTypeName())
++        {
++            $filters = array($this->getTaxonomyName());
++
++            foreach ($filters as $tax_slug)
++            {
++                // retrieve the taxonomy object
++                $tax_obj = get_taxonomy($tax_slug);
++                $tax_name = $tax_obj->labels->name;
++                // retrieve array of term objects per taxonomy
++                $terms = get_terms($tax_slug);
++
++                // output html for taxonomy dropdown filter
++                echo "<select name='$tax_slug' id='$tax_slug' class='postform'>";
++                echo "<option value=''>".__('Show All','churchope')." ". $tax_name."</option>";
++                $th_slider_tax_slug = (isset($_GET[$tax_slug]) ? $_GET[$tax_slug] : NULL);
++                foreach ($terms as $term)
++                {
++                    // output each select option line, check against the last $_GET to show the current option selected
++                    echo '<option value=' . $term->slug, $th_slider_tax_slug == $term->slug ? ' selected="selected"' : '', '>' . $term->name . ' (' . $term->count . ')</option>';
++                }
++                echo "</select>";
++            }
++        }
++    }
++
++    function th_post_type_columns($columns)
++    {
++
++        $columns = array(
++            "cb" => "<input type=\"checkbox\" />",
++            "title" => __("Event Item Title", 'churchope'),
++            "thevents_preview" => __("Image preview", 'churchope'),
++            "thevents_categories" => __("Assign to Events Category(s)", 'churchope'),
++            "thevents_event_start" => __("Event start at:", 'churchope'),
++            "thevents_event_end" => __("Event end at:", 'churchope'),
++            "thevents_event_skip_dates" => __("Skip dates:", 'churchope'),
++            "thevents_event_is_repetition" => __("Is repetition:", 'churchope'),
++            "thevents_event_period" =>__("Repeat every:", 'churchope'),
++        );
++
++        return $columns;
++    }
++
++    function th_post_type_custom_columns($column)
++    {
++        global $post;
++        switch ($column)
++        {
++
++            case "thevents_preview":
++                ?>
++                <?php if (has_post_thumbnail()) : ?>
++                <a href="post.php?post=<?php echo $post->ID ?>&action=edit"><?php the_post_thumbnail('event_widget'); ?></a>
++            <?php
++            endif;
++                break;
++
++            case "thevents_categories":
++                $kgcs = get_the_terms(0, $this->getTaxonomyName());
++                if (!empty($kgcs))
++                {
++                    $kgcs_html = array();
++                    foreach ($kgcs as $kgc)
++                        array_push($kgcs_html, $kgc->name);
++
++                    echo implode($kgcs_html, ", ");
++                }
++                break;
++            case 'thevents_event_start':
++                echo get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_DATE_META_KEY , true);
++                break;
++            case 'thevents_event_end':
++                echo get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_END_DATE_META_KEY , true);
++                break;
++            case 'thevents_event_skip_dates':
++                echo get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_SKIP_DATE_META_KEY , true);
++                break;
++            case 'thevents_event_is_repetition':
++                $repeat = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_REPEATING_META_KEY, true );
++                if($repeat)
++                {
++                    echo __('Yes', 'churchope');
++                }
++                else
++                {
++                    echo __('No', 'churchope');
++                }
++                break;
++            case 'thevents_event_period':
++                $repeat = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_REPEATING_META_KEY, true );
++                if($repeat)
++                {
++                    $period = get_post_meta($post->ID,SHORTNAME . Widget_Event::EVENT_INTERVAL_META_KEY , true);
++                    if($period)
++                    {
++                        echo __(ucfirst($period), 'churchope');
++                    }
++                }
++                break;
++        }
++    }
++
++    protected function getPostLabeles()
++    {
++
++        $labels = array(
++            'name'				=> __('Events',  'churchope'),
++            'all_items'			=> __('Event Posts',  'churchope'),
++            'singular_name'		=> __('Event',  'churchope'),
++            'add_new'			=> __('Add New',  'churchope'),
++            'add_new_item'		=> __('Add New Item', 'churchope'),
++            'edit_item'			=> __('Edit Item', 'churchope'),
++            'new_item'			=> __('New Item', 'churchope'),
++            'view_item'			=> __('View Item', 'churchope'),
++            'search_items'		=> __('Search Items', 'churchope'),
++            'not_found'			=> __('No items found', 'churchope'),
++            'not_found_in_trash' => __('No items found in Trash', 'churchope'),
++            'parent_item_colon'	=> ''
++        );
++
++        return $labels;
++    }
++
++    protected function getTaxLabels()
++    {
++        $labels = array(
++            'name'					=> __('Event Categories', 'churchope'),
++            'singular_name'			=> __('Event Category',  'churchope'),
++            'search_items'			=> __('Search Events Categories', 'churchope'),
++            'popular_items'			=> __('Popular Events Categories', 'churchope'),
++            'all_items'				=> __('All Events Categories', 'churchope'),
++            'parent_item'			=> null,
++            'parent_item_colon'		=> null,
++            'edit_item'				=> __('Edit Events Category', 'churchope'),
++            'update_item'			=> __('Update Events Category', 'churchope'),
++            'add_new_item'			=> __('Add New Events Category', 'churchope'),
++            'new_item_name'			=> __('New Events Category Name', 'churchope'),
++            'add_or_remove_items'	=> __('Add or remove Events Categories', 'churchope'),
++            'choose_from_most_used' => __('Choose from the most used Events Categories', 'churchope'),
++            'separate_items_with_commas' => __('Separate Events Categories with commas', 'churchope'),
++        );
++        return $labels;
++    }
+ }
+ ?>
+\ No newline at end of file
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/Event/Upcoming.php churchope/classes/Widget/Event/Upcoming.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/Event/Upcoming.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/classes/Widget/Event/Upcoming.php	2013-11-01 00:20:26.847953468 -0400
+@@ -1,4 +1,5 @@
+ <?php
+ 
+ class Widget_Event_Upcoming extends Widget_Event implements Widget_Interface_Cache
+ {
+@@ -292,30 +293,36 @@ HTML_ENTITIES;
+ 	
+ 	public function getNextEvents($instance)
+ 	{
+-		$result				= array();
++        $returnOldEventSeconds = 0;
++        $result				= array();
+ 		$category			= $instance[self::CATEGORY];
+ 		$count				= $instance[self::COUNT];
+ 		$upcoming_events	= array();
+ 		
+-		$list = $this->getFeaturedEventsList();
+-		
++		$list = $this->getFeaturedEventsList($returnOldEventSeconds);
++
+ 		if($list && is_array($list) && count($list))
+ 		{
+ 				foreach($list as $event)
+ 				{
++                    $end_event_datetimestamp  = strtotime($event->end_date);
++
++                    //Create array of skip dates
++                    $dates_to_skip = $this->getSkipDateArray($event);
++
+ 					if( !is_null($event->time_left) )
+ 					{
+-
++                        //TODO add exclude code here!!
+ 						/*
+ 						 * or all or neaded category
+ 						 */
+ 						if( $category == self::ALL || has_term($category, Custom_Posts_Type_Event::TAXONOMY, $event->post_id))
+ 						{
+ 							$event = $this->completeEventData($event);
+-							
++
++                            //TODO add optimization to not go into this loop if the event end date has passed
+ 							if($event->is_repeat)
+ 							{
+-
+ 								if($event->time_left > 0)
+ 								{
+ 									$upcoming_events[] = $this->getEventMainInfo($event);
+@@ -330,7 +337,28 @@ HTML_ENTITIES;
+ 										{
+ 											$to_next = $this->getTimeBeforeEvent($event->post_id, $to_next + $this->getTimezoneTime()/*time()*/);
+ 										}
+-										$upcoming_events[] = $this->getEventMainInfo($event, $to_next);
++
++                                        $one_of_event = $this->getEventMainInfo($event, $to_next);
++//                                        error_log($one_of_event->day . "/" . $one_of_event->month . "/" . $one_of_event->year);
++                                        $one_of_event_timestamp = strtotime($one_of_event->month. " " . $one_of_event->day . " "  . $one_of_event->year);
++//                                        var_dump($one_of_event);
++//                                        var_dump($one_of_event_timestamp);
++//
++//                                        error_log("Dates to SKIP:" . implode(",",$dates_to_skip));
++//                                        foreach($dates_to_skip as $dd) {
++//                                            error_log(date(DATE_RFC2822,$dd));
++//                                        }
++//                                        error_log("TIMESTAMP:" . date(DATE_RFC2822,$one_of_event_timestamp));
++
++                                        if(!in_array($one_of_event_timestamp,$dates_to_skip))
++                                        {
++                                            if (isset($event->end_date) && ($event->end_date != null) && ($one_of_event_timestamp >= ($end_event_datetimestamp + $returnOldEventSeconds))) {
++                                                //do nothing if there is an end date and we're past it
++                                            }
++                                            else {
++                                                $upcoming_events[] = $one_of_event;
++                                            }
++                                        }
+ 									}
+ 								}
+ 								else
+@@ -346,7 +374,28 @@ HTML_ENTITIES;
+ 											$to_next = $this->getTimeBeforeEvent($event->post_id, $to_next + /*time()*/ $this->getTimezoneTime());
+ 											
+ 										}
+-										$upcoming_events[] = $this->getEventMainInfo($event, $to_next);
++
++                                        $one_of_event = $this->getEventMainInfo($event, $to_next);
++//                                        error_log($one_of_event->day . "/" . $one_of_event->month . "/" . $one_of_event->year);
++                                        $one_of_event_timestamp = strtotime($one_of_event->month. " " . $one_of_event->day . " "  . $one_of_event->year);
++//                                        var_dump($one_of_event);
++//                                        var_dump($one_of_event_timestamp);
++//
++//                                        error_log("Dates to SKIP:" . implode(",",$dates_to_skip));
++//                                        foreach($dates_to_skip as $dd) {
++//                                            error_log(date(DATE_RFC2822,$dd));
++//                                        }
++//                                        error_log("TIMESTAMP:" . date(DATE_RFC2822,$one_of_event_timestamp));
++
++                                        if(!in_array($one_of_event_timestamp,$dates_to_skip))
++                                        {
++                                            if (isset($event->end_date) && $event->end_date != null && ($one_of_event_timestamp >= ($end_event_datetimestamp + $returnOldEventSeconds))) {
++                                                //do nothing if there is an end date and we're past it
++                                            }
++                                            else {
++                                                $upcoming_events[] = $one_of_event;
++                                            }
++                                        }
+ 									}
+ 								}
+ 							}
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/Event.php churchope/classes/Widget/Event.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/Event.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/classes/Widget/Event.php	2013-11-01 00:07:03.815929312 -0400
+@@ -20,6 +20,11 @@ class Widget_Event extends Widget_Defaul
+ 	 */
+ 	const EVENT_DATE_META_KEY	= '_event_date';
+ 
++    /**
++     * date meta key
++     */
++    const EVENT_END_DATE_META_KEY	= '_event_end_date';
++
+ 	/**
+ 	 *time meta key
+ 	 */
+@@ -30,6 +35,11 @@ class Widget_Event extends Widget_Defaul
+ 	 */
+ 	const EVENT_REPEATING_META_KEY = '_event_is_repeat';
+ 
++    /**
++     * is repeating meta key
++     */
++    const EVENT_SKIP_DATE_META_KEY = '_event_skip_dates';
++
+ 	/**
+ 	 * interval
+ 	 */
+@@ -680,7 +690,7 @@ SQL;
+ 	 * @global object $wpdb
+ 	 * @return mix
+ 	 */
+-	protected function getFeaturedEventsList()
++	protected function getFeaturedEventsList($returnOldEventSeconds=0)
+ 	{
+ 		global $wpdb;
+ 		if($wpdb)
+@@ -691,7 +701,9 @@ SQL;
+ 				SELECT
+ 					postmeta.post_id as post_id,
+ 					meta_date.meta_value as date,
++					meta_end_date.meta_value as end_date,
+ 					meta_time.meta_value as time,
++					meta_skip_dates.meta_value as skip_dates,
+ 					meta_interval.meta_value as event_interval,
+ 					IF(ISNULL(meta_repeat.meta_value),0,IF(meta_repeat.meta_value = 'on',1,0)) as is_repeat,
+ 					(UNIX_TIMESTAMP( STR_TO_DATE( CONCAT(meta_date.meta_value, ' ', IF(ISNULL(meta_time.meta_value),'12:00 AM',meta_time.meta_value)),CONCAT('%m/%d/%Y' , ' ', IF(meta_time.meta_value REGEXP '[^m]$', '%H:%i', '%h:%i %p' )) ) ) - UNIX_TIMESTAMP() - {$this->getTimezoneShift()} ) as time_left
+@@ -722,6 +734,16 @@ SQL;
+ 																AND
+ 																meta_repeat.meta_key = '{$this->getRepetitionMetaKeyName()}'
+ 															)
++				     LEFT JOIN {$wpdb->postmeta} meta_skip_dates ON (
++																postmeta.post_id = meta_skip_dates.post_id
++																AND
++																meta_skip_dates.meta_key = '{$this->getSkipDatesMetaKeyName()}'
++															)
++		             LEFT JOIN {$wpdb->postmeta} meta_end_date ON (
++																postmeta.post_id = meta_end_date.post_id
++																AND
++																meta_end_date.meta_key = '{$this->getEndDateMetaKeyName()}'
++															)
+ SQL;
+ 			// Adding condition if WPML plugin is exist.
+ 			if($this->isWPML_PluginActive())
+@@ -736,7 +758,7 @@ SQL;
+ 						AND (
+ 							meta_repeat.meta_value = 'on'
+ 							OR
+-							(UNIX_TIMESTAMP( STR_TO_DATE( CONCAT(meta_date.meta_value, ' ', IF(ISNULL(meta_time.meta_value),'12:00 AM', meta_time.meta_value)),CONCAT('%m/%d/%Y' , ' ', IF(meta_time.meta_value REGEXP '[^m]$', '%H:%i', '%h:%i %p' )) ) ) - UNIX_TIMESTAMP() - {$this->getTimezoneShift()}) > 0
++							(UNIX_TIMESTAMP( STR_TO_DATE( CONCAT(meta_date.meta_value, ' ', IF(ISNULL(meta_time.meta_value),'12:00 AM', meta_time.meta_value)),CONCAT('%m/%d/%Y' , ' ', IF(meta_time.meta_value REGEXP '[^m]$', '%H:%i', '%h:%i %p' )) ) ) - UNIX_TIMESTAMP() - {$this->getTimezoneShift()} + {$returnOldEventSeconds}) > 0
+ 						)
+ 					ORDER BY post_id
+ SQL;
+@@ -780,13 +802,22 @@ SQL;
+ 		$repeating_events = $this->getRepeatingEvents();
+ 		foreach ((array) $repeating_events as $event)
+ 		{
+-
++            //var_dump($event);
++//            error_log(strtotime($event->day));
++//            error_log(strtotime($event->post_id));
++//            error_log(strtotime($event->end_date));
+ 			$start_event_datetimestamp  = strtotime($event->date);
++            $end_event_datetimestamp  = strtotime($event->end_date);
++
+ 			$one_of_event_date = 0;
+ 
++            //Create array of skip dates
++            $dates_to_skip = $this->getSkipDateArray($event);
++
++//TODO add check for $end_event_datetimestamp > $month_start here MAYBE
+ 			if($start_event_datetimestamp < $month_end )
+ 			{
+-				if($event->event_interval == self::INTERVAL_MONTH)
++                if($event->event_interval == self::INTERVAL_MONTH)
+ 				{
+ 					while($one_of_event_date <= $month_end)
+ 					{
+@@ -821,11 +852,15 @@ SQL;
+ 							$one_of_event_date = $start_event_datetimestamp;
+ //							$one_of_event_date = strtotime(date('m/d/Y H:i:s', $start_event_datetimestamp) . " +1 {$event->event_interval}");
+ 						}
+-
+-						if($one_of_event_date >= $month_start &&  $one_of_event_date <= $month_end)
++						if($one_of_event_date >= $month_start &&  $one_of_event_date <= $month_end && !in_array($one_of_event_date,$dates_to_skip))
+ 						{
+-							$day = date('j', $one_of_event_date);
+-							$calendar[$day][] = $event;
++                            if (isset($event->end_date) && $event->end_date != null && $one_of_event_date >= $end_event_datetimestamp) {
++                               //do nothing if there is an end date and we're past it
++                            }
++                            else {
++                                $day = date('j', $one_of_event_date);
++                                $calendar[$day][] = $event;
++                            }
+ 						}
+ 					}
+ 				}
+@@ -875,8 +910,11 @@ SQL;
+ 				SELECT
+ 					postmeta.post_id as post_id,
+ 					meta_date.meta_value as date,
++					meta_end_date.meta_value as end_date,
+ 					DAY(STR_TO_DATE(meta_date.meta_value, '%m/%d/%Y')) as day,
++					DAY(STR_TO_DATE(meta_end_date.meta_value, '%m/%d/%Y')) as end_day,
+ 					meta_time.meta_value as time,
++					meta_skip_dates.meta_value as skip_dates,
+ 					meta_interval.meta_value as event_interval
+ 
+ 					FROM {$wpdb->postmeta} postmeta
+@@ -890,6 +928,11 @@ SQL;
+ 																AND
+ 																meta_date.meta_key = '{$this->getDateMetaKeyName()}'
+ 															)
++					LEFT JOIN {$wpdb->postmeta} meta_end_date ON (
++																postmeta.post_id = meta_end_date.post_id
++																AND
++																meta_end_date.meta_key = '{$this->getEndDateMetaKeyName()}'
++															)
+ 					LEFT JOIN {$wpdb->postmeta} meta_time ON (
+ 																postmeta.post_id = meta_time.post_id
+ 																AND
+@@ -905,6 +948,12 @@ SQL;
+ 																AND
+ 																meta_repeat.meta_key = '{$this->getRepetitionMetaKeyName()}'
+ 															)
++
++					LEFT JOIN {$wpdb->postmeta} meta_skip_dates ON (
++																postmeta.post_id = meta_skip_dates.post_id
++																AND
++																meta_skip_dates.meta_key = '{$this->getSkipDatesMetaKeyName()}'
++															)
+ SQL;
+ 			// Adding condition if WPML plugin is exist.
+ 			if($this->isWPML_PluginActive())
+@@ -1018,6 +1067,15 @@ SQL;
+ 		return SHORTNAME . self::EVENT_DATE_META_KEY;
+ 	}
+ 
++    /**
++     * Get date meta key for current theme
++     * @return type
++     */
++    private function getEndDateMetaKeyName()
++    {
++        return SHORTNAME . self::EVENT_END_DATE_META_KEY;
++    }
++
+ 	/**
+ 	 * Get time meta key for current theme
+ 	 * @return type
+@@ -1036,6 +1094,15 @@ SQL;
+ 		return SHORTNAME . self::EVENT_REPEATING_META_KEY;
+ 	}
+ 
++    /**
++     * Get repetition flag meta key for current theme
++     * @return type
++     */
++    private function getSkipDatesMetaKeyName()
++    {
++        return SHORTNAME . self::EVENT_SKIP_DATE_META_KEY;
++    }
++
+ 	/**
+ 	 * Get interval meta key for current theme
+ 	 * @return type
+@@ -1141,5 +1208,24 @@ SQL;
+ 		return $resulted_terms;
+ 	}
+ 
++    /**
++     * @param $event
++     * @return array
++     */
++    public function getSkipDateArray($event)
++    {
++        $string_dates_to_skip = explode(",", $event->skip_dates);
++        $dates_to_skip = array();
++        $i = 0;
++//        error_log("Dates" . $event->skip_dates);
++        //var_dump($string_dates_to_skip);
++        foreach ((array)$string_dates_to_skip as $skip_date) {
++//            error_log(strtotime($skip_date));
++            $dates_to_skip[$i] = strtotime($skip_date);
++            $i++;
++        }
++        return $dates_to_skip;
++    }
++
+ }
+ ?>
+\ No newline at end of file
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/SocialLinks.php churchope/classes/Widget/SocialLinks.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/classes/Widget/SocialLinks.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/classes/Widget/SocialLinks.php	2013-07-12 10:26:30.270450546 -0400
+@@ -100,7 +100,7 @@ class Widget_SocialLinks extends Widget_
+ 							$http = '';
+ 						}
+ 						
+-						$frontend_html .= sprintf('<a href="%s%s/feed" class="%s%s">%s</a>',
++						$frontend_html .= sprintf('<a href="%s%s" class="%s%s">%s</a>',
+ 													$http,
+ 													$account,
+ 													$id,
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/functions.php churchope/functions.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/functions.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/functions.php	2013-09-29 12:23:19.685665505 -0400
+@@ -71,6 +71,8 @@ $gallery->run();
+ $testimonial = new Custom_Posts_Type_Testimonial();
+ $testimonial->run();
+ 
++//$testimonial = new Custom_Posts_Type_Podcast();
++//$testimonial->run();
+ 
+ $event = new Custom_Posts_Type_Event();
+ $event->run();
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/lib/metabox/functions.php churchope/lib/metabox/functions.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/lib/metabox/functions.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/lib/metabox/functions.php	2013-10-02 22:45:32.361751601 -0400
+@@ -262,7 +262,8 @@ function cmb_sample_metaboxes( array $me
+ 			
+ 		),
+ 	);
+-	
++
++
+ 	$meta_boxes[] = array(
+ 		'id'         => 'event_date_option',
+ 		'title'      => __('Event date','churchope'),
+@@ -289,6 +290,18 @@ function cmb_sample_metaboxes( array $me
+ 				'id'   => SHORTNAME . Widget_Event::EVENT_REPEATING_META_KEY,
+ 				'type' => 'checkbox',
+ 			),
++            array(
++                'name' => __('Event End Date','churchope'),
++                'desc' => __('Recurring event will end','churchope'),
++                'id'   => SHORTNAME . Widget_Event::EVENT_END_DATE_META_KEY,
++                'type' => 'text_date',
++            ),
++            array(
++                'name' => __('Event Skip Dates','churchope'),
++                'desc' => __('Comma Separated List of Dates to skip.  Format mm/dd/yyyy, mm/dd/yyyy','churchope'),
++                'id'   => SHORTNAME . Widget_Event::EVENT_SKIP_DATE_META_KEY,
++                'type' => 'text',
++            ),
+ 			array(
+ 				'name'    => __('Repeat every:','churchope'),
+ 				'desc'    => __('Repetition interval','churchope'),
+diff -rup /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/lib/shortcode/eventsCalendar.php churchope/lib/shortcode/eventsCalendar.php
+--- /tmp/CHURCHOPE/ChurcHope-v1.12.1/churchope/lib/shortcode/eventsCalendar.php	2013-03-21 18:23:58.000000000 -0400
++++ churchope/lib/shortcode/eventsCalendar.php	2014-02-14 07:23:38.711507654 -0500
+@@ -354,6 +354,7 @@ function getCalendarHtml($categories, $l
+ 																	'time'	=> get_post_meta($event->post_id, SHORTNAME.'_event_time', true),
+ 							);
+ 							$details = $temp_list[$event->post_id];
++
+ 						}
+ 
+ 						if($details && isset($details['show_event']))
+@@ -364,7 +365,13 @@ function getCalendarHtml($categories, $l
+ 								// add concatenation to show all events in day
+ 								if(!$calendar_event)
+ 								{
+-									$calendar_event = '<div class="event"><a href="'.$details['url'].'"><span class="time">'.$details['time'].'</span>'.$details['title'].'</a></div>';
++$calendar_event = '<div class="event"><a href="'.$details['url'].'"><span class="time">'.$details['time'].'</span>'.$details['title'].'</a>';
++
++if ($events_count_for_day >1) {
++    $calendar_event .= "<br/>+" . ($events_count_for_day-1) . " more";
++}
++
++$calendar_event .= '</div>';
+ 								}
+ 							}
+ 						}
